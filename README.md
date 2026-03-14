@@ -56,7 +56,7 @@ For local development and explicit trust pinning:
   "plugins": {
     "allow": ["openclaw-mama"],
     "load": {
-      "paths": ["/absolute/path/to/openclaw-mama"]
+      "paths": ["/path/to/your/cloned/openclaw-mama"]
     },
     "slots": {
       "memory": "openclaw-mama"
@@ -65,7 +65,7 @@ For local development and explicit trust pinning:
       "openclaw-mama": {
         "enabled": true,
         "config": {
-          "dbPath": "/absolute/path/to/mama-memory.db"
+          "dbPath": "/path/to/your/openclaw-mama.db"
         }
       },
       "memory-core": {
@@ -113,7 +113,7 @@ npx openclaw --profile codex-mama-e2e plugins install . --link
 npx openclaw --profile codex-mama-e2e config set plugins.allow '["openclaw-mama"]'
 npx openclaw --profile codex-mama-e2e config set plugins.slots.memory '"openclaw-mama"'
 npx openclaw --profile codex-mama-e2e config set plugins.entries.openclaw-mama.enabled true
-npx openclaw --profile codex-mama-e2e config set plugins.entries.openclaw-mama.config.dbPath '"/absolute/path/to/mama-e2e.db"'
+npx openclaw --profile codex-mama-e2e config set plugins.entries.openclaw-mama.config.dbPath '"/path/to/your/mama-e2e.db"'
 ```
 
 ### 2. Start the gateway

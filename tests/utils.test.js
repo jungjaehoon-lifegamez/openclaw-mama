@@ -218,4 +218,15 @@ describe('resolvePluginConfig', () => {
 
     expect(result).toEqual({ dbPath: '/tmp/mama-test.db' });
   });
+
+  it('should ignore config objects that contain known global OpenClaw keys', () => {
+    const result = resolvePluginConfig({
+      config: {
+        dbPath: '/tmp/mama-test.db',
+        gateway: { mode: 'local' },
+      },
+    });
+
+    expect(result).toBeUndefined();
+  });
 });

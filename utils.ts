@@ -113,8 +113,32 @@ export function resolvePluginConfig<T extends Record<string, unknown>>(
   if (isRecord(api.pluginConfig)) {
     return api.pluginConfig as T;
   }
-  if (isRecord(api.config) && ('dbPath' in api.config || Object.keys(api.config).length === 0)) {
+
+  if (!isRecord(api.config)) {
+    return undefined;
+  }
+
+  const globalConfigKeys = new Set([
+    'agents',
+    'channels',
+    'commands',
+    'gateway',
+    'hooks',
+    'memory',
+    'meta',
+    'models',
+    'plugins',
+    'tools',
+    'ui',
+  ]);
+
+  if (Object.keys(api.config).some((key) => globalConfigKeys.has(key))) {
+    return undefined;
+  }
+
+  if (Object.keys(api.config).length === 0 || 'dbPath' in api.config) {
     return api.config as T;
   }
+
   return undefined;
 }
