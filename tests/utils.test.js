@@ -6,6 +6,8 @@ import {
   isRecord,
   getStringField,
   isRecentCheckpoint,
+  createTextToolResult,
+  resolvePluginConfig,
 } from '../utils';
 
 describe('getErrorMessage', () => {
@@ -180,5 +182,51 @@ describe('isRecentCheckpoint', () => {
 
     // With 5-minute threshold, should be true
     expect(isRecentCheckpoint(timestamp, 5 * 60 * 1000)).toBe(true);
+  });
+});
+
+describe('createTextToolResult', () => {
+  it('should include content text and details summary by default', () => {
+    const result = createTextToolResult('hello world');
+
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'hello world' }],
+      details: { summary: 'hello world' },
+    });
+  });
+
+  it('should merge extra details with the summary', () => {
+    const result = createTextToolResult('saved', { id: 'decision_123', count: 2 });
+
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'saved' }],
+      details: { summary: 'saved', id: 'decision_123', count: 2 },
+    });
+  });
+});
+
+describe('resolvePluginConfig', () => {
+  it('should prefer pluginConfig over the full OpenClaw config object', () => {
+    const result = resolvePluginConfig({
+      config: {
+        gateway: { mode: 'local' },
+      },
+      pluginConfig: {
+        dbPath: '/tmp/mama-test.db',
+      },
+    });
+
+    expect(result).toEqual({ dbPath: '/tmp/mama-test.db' });
+  });
+
+  it('should ignore config objects that contain known global OpenClaw keys', () => {
+    const result = resolvePluginConfig({
+      config: {
+        dbPath: '/tmp/mama-test.db',
+        gateway: { mode: 'local' },
+      },
+    });
+
+    expect(result).toBeUndefined();
   });
 });

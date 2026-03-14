@@ -21,6 +21,8 @@ import {
   getErrorMessage,
   formatReasoning,
   isRecentCheckpoint,
+  createTextToolResult,
+  resolvePluginConfig,
 } from './utils';
 
 // MAMA module path - resolve from workspace dependency
@@ -175,9 +177,7 @@ const mamaPlugin = {
    * @param api - OpenClaw plugin API for event registration and tool creation
    */
   register(api: OpenClawPluginApi) {
-    // Get plugin config (config property may be available depending on SDK version)
-    const config: PluginConfig | undefined =
-      'config' in api ? (api as { config?: PluginConfig }).config : undefined;
+    const config = resolvePluginConfig<PluginConfig>(api as unknown as Record<string, unknown>);
 
     // =====================================================
     // Session Start: Initialize and load checkpoint
@@ -511,6 +511,7 @@ const mamaPlugin = {
     // =====================================================
     api.registerTool({
       name: 'mama_search',
+      label: 'MAMA Search',
       description: `Search semantic memory for relevant past decisions.
 
 ⚠️ **TRIGGERS - Call this BEFORE:**
@@ -545,7 +546,7 @@ const mamaPlugin = {
 
           const query = String(params.query || '').trim();
           if (!query) {
-            return { content: [{ type: 'text', text: 'Error: query required' }] };
+            return createTextToolResult('Error: query required', { error: true });
           }
 
           const limit = Math.min(Number(params.limit) || 5, 20);
@@ -554,14 +555,10 @@ const mamaPlugin = {
           const result = await getMAMA().suggest(query, { limit, threshold: 0.5 });
 
           if (!result?.results?.length) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No decisions found for "${query}". This may be a new topic.`,
-                },
-              ],
-            };
+            return createTextToolResult(
+              `No decisions found for "${query}". This may be a new topic.`,
+              { query, count: 0 }
+            );
           }
 
           // Format output
@@ -574,9 +571,12 @@ const mamaPlugin = {
             output += `   ID: \`${r.id}\` | Outcome: ${r.outcome || 'pending'}\n\n`;
           });
 
-          return { content: [{ type: 'text', text: output }] };
+          return createTextToolResult(output, {
+            query,
+            count: result.results.length,
+          });
         } catch (err: unknown) {
-          return { content: [{ type: 'text', text: `MAMA error: ${getErrorMessage(err)}` }] };
+          return createTextToolResult(`MAMA error: ${getErrorMessage(err)}`, { error: true });
         }
       },
     });
@@ -586,6 +586,7 @@ const mamaPlugin = {
     // =====================================================
     api.registerTool({
       name: 'mama_save',
+      label: 'MAMA Save',
       description: `Save a decision or checkpoint to semantic memory.
 
 ⚠️ **REQUIRED WORKFLOW (Don't create orphans!):**
@@ -653,9 +654,9 @@ const mamaPlugin = {
           if (saveType === 'checkpoint') {
             const summary = String(params.summary || '');
             if (!summary) {
-              return {
-                content: [{ type: 'text', text: 'Error: summary required for checkpoint' }],
-              };
+              return createTextToolResult('Error: summary required for checkpoint', {
+                error: true,
+              });
             }
 
             // mama.saveCheckpoint returns lastInsertRowid directly (not {id: ...})
@@ -665,9 +666,9 @@ const mamaPlugin = {
               String(params.next_steps || '')
             );
 
-            return {
-              content: [{ type: 'text', text: `Checkpoint saved (id: ${checkpointId})` }],
-            };
+            return createTextToolResult(`Checkpoint saved (id: ${checkpointId})`, {
+              checkpointId,
+            });
           }
 
           // Decision - use mama.save()
@@ -676,11 +677,9 @@ const mamaPlugin = {
           const reasoning = String(params.reasoning || '');
 
           if (!topic || !decision || !reasoning) {
-            return {
-              content: [
-                { type: 'text', text: 'Error: topic, decision, and reasoning all required' },
-              ],
-            };
+            return createTextToolResult('Error: topic, decision, and reasoning all required', {
+              error: true,
+            });
           }
 
           const confidence = Number(params.confidence) || 0.8;
@@ -703,9 +702,9 @@ const mamaPlugin = {
             msg += `\n💡 ${result.collaboration_hint}`;
           }
 
-          return { content: [{ type: 'text', text: msg }] };
+          return createTextToolResult(msg, { decisionId: result.id });
         } catch (err: unknown) {
-          return { content: [{ type: 'text', text: `MAMA error: ${getErrorMessage(err)}` }] };
+          return createTextToolResult(`MAMA error: ${getErrorMessage(err)}`, { error: true });
         }
       },
     });
@@ -715,6 +714,7 @@ const mamaPlugin = {
     // =====================================================
     api.registerTool({
       name: 'mama_load_checkpoint',
+      label: 'MAMA Load Checkpoint',
       description: `Load latest checkpoint to resume previous session.
 
 **Use at session start to:**
@@ -743,7 +743,7 @@ Also returns recent decisions for context.`,
                 msg += `- ${d.topic}: ${d.decision}\n`;
               });
             }
-            return { content: [{ type: 'text', text: msg }] };
+            return createTextToolResult(msg, { checkpoint: null, recentCount: recent?.length || 0 });
           }
 
           let msg = `**Checkpoint** (${new Date(checkpoint.timestamp).toISOString()})\n\n`;
@@ -760,9 +760,12 @@ Also returns recent decisions for context.`,
             });
           }
 
-          return { content: [{ type: 'text', text: msg }] };
+          return createTextToolResult(msg, {
+            checkpointId: checkpoint.id,
+            recentCount: recent?.length || 0,
+          });
         } catch (err: unknown) {
-          return { content: [{ type: 'text', text: `MAMA error: ${getErrorMessage(err)}` }] };
+          return createTextToolResult(`MAMA error: ${getErrorMessage(err)}`, { error: true });
         }
       },
     });
@@ -772,6 +775,7 @@ Also returns recent decisions for context.`,
     // =====================================================
     api.registerTool({
       name: 'mama_update',
+      label: 'MAMA Update',
       description: `Update outcome of a previous decision.
 
 **Use when you learn if a decision worked:**
@@ -804,7 +808,7 @@ Helps future sessions learn from experience.`,
           const reason = String(params.reason || '');
 
           if (!decisionId || !outcome) {
-            return { content: [{ type: 'text', text: 'Error: id and outcome required' }] };
+            return createTextToolResult('Error: id and outcome required', { error: true });
           }
 
           // mama.updateOutcome(id, { outcome, failure_reason, limitation })
@@ -814,11 +818,12 @@ Helps future sessions learn from experience.`,
             limitation: outcome === 'PARTIAL' ? reason : undefined,
           });
 
-          return {
-            content: [{ type: 'text', text: `Decision ${decisionId} updated to ${outcome}` }],
-          };
+          return createTextToolResult(`Decision ${decisionId} updated to ${outcome}`, {
+            decisionId,
+            outcome,
+          });
         } catch (err: unknown) {
-          return { content: [{ type: 'text', text: `MAMA error: ${getErrorMessage(err)}` }] };
+          return createTextToolResult(`MAMA error: ${getErrorMessage(err)}`, { error: true });
         }
       },
     });
