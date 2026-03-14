@@ -87,3 +87,34 @@ export function isRecentCheckpoint(
   const now = Date.now();
   return now - checkpointTime < thresholdMs;
 }
+
+/**
+ * Build a text tool result compatible with the OpenClaw SDK.
+ */
+export function createTextToolResult(
+  text: string,
+  details: Record<string, unknown> = {}
+): { content: Array<{ type: 'text'; text: string }>; details: Record<string, unknown> } {
+  return {
+    content: [{ type: 'text', text }],
+    details: {
+      summary: text,
+      ...details,
+    },
+  };
+}
+
+/**
+ * Resolve plugin-scoped config from the OpenClaw plugin API shape.
+ */
+export function resolvePluginConfig<T extends Record<string, unknown>>(
+  api: Record<string, unknown>
+): T | undefined {
+  if (isRecord(api.pluginConfig)) {
+    return api.pluginConfig as T;
+  }
+  if (isRecord(api.config) && ('dbPath' in api.config || Object.keys(api.config).length === 0)) {
+    return api.config as T;
+  }
+  return undefined;
+}

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Updated `@jungjaehoon/mama-core` compatibility to `^1.3.1`
+- Raised the minimum supported OpenClaw version to `2026.2.22`
+- Declared Node.js runtime requirement `>=22.13.0`
+- Updated native tool definitions to match the current OpenClaw SDK contract by adding tool labels and structured tool result details
+
+### Fixed
+
+- Read plugin-scoped config from `api.pluginConfig` so `plugins.entries.openclaw-mama.config.dbPath` is applied in real OpenClaw runtime
+- Removed the local `openclaw.d.ts` shim in favor of current OpenClaw SDK types
+
+### Verified
+
+- Confirmed the plugin loads as a `memory` slot plugin in OpenClaw runtime
+- Confirmed `mama_search`, `mama_save`, `mama_load_checkpoint`, and `mama_update` through gateway `/tools/invoke`
+- Confirmed `openclaw status --json` reports `memoryPlugin.slot = openclaw-mama` on supported OpenClaw versions
+
+### Docs
+
+- Reworked README for standalone repository usage
+- Added explicit `plugins.allow` guidance for trusted local plugin loading
+- Added developer-oriented runtime smoke test steps
+- Updated architecture notes to reflect direct `mama-core` integration and current runtime behavior
+
 ## [0.5.0] - 2026-02-15
 
 ### Added

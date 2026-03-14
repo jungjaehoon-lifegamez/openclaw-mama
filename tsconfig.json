@@ -12,6 +12,6 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["index.ts", "utils.ts", "openclaw.d.ts", "tests/**/*.ts"],
+  "include": ["index.ts", "utils.ts", "tests/**/*.ts"],
   "exclude": ["node_modules"]
 }
