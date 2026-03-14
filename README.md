@@ -90,17 +90,101 @@ Why `plugins.allow` matters:
 
 Semantic search over saved decisions.
 
+Typical use:
+
+```json
+{
+  "query": "authentication strategy",
+  "limit": 5
+}
+```
+
+Returns:
+
+- related decisions ranked by semantic similarity
+- decision id and outcome for follow-up linking or updates
+
 ### mama_save
 
 Save a decision or checkpoint.
+
+Save a decision:
+
+```json
+{
+  "type": "decision",
+  "topic": "auth_strategy",
+  "decision": "Use JWT with refresh tokens",
+  "reasoning": "Stateless auth fits the gateway architecture. builds_on: decision_auth_v1",
+  "confidence": 0.8
+}
+```
+
+Save a checkpoint:
+
+```json
+{
+  "type": "checkpoint",
+  "summary": "Completed auth implementation",
+  "next_steps": "Add rate limiting"
+}
+```
 
 ### mama_load_checkpoint
 
 Load the latest checkpoint plus recent decisions.
 
+Typical use:
+
+```json
+{}
+```
+
+Returns:
+
+- latest checkpoint summary
+- next steps
+- recent decisions for context recovery
+
 ### mama_update
 
 Update a saved decision outcome.
+
+Typical use:
+
+```json
+{
+  "id": "decision_auth_strategy_123456",
+  "outcome": "success",
+  "reason": "Works well in production"
+}
+```
+
+Supported outcomes:
+
+- `success`
+- `failed`
+- `partial`
+
+## Usage Patterns
+
+### Resume prior work
+
+1. Call `mama_load_checkpoint`
+2. Review the returned summary and next steps
+3. Continue with the current task
+
+### Save a new architectural choice
+
+1. Call `mama_search` first to find related prior decisions
+2. Save the new decision with `mama_save`
+3. Include `builds_on`, `debates`, or `synthesizes` in the reasoning when relevant
+
+### Record real-world outcome
+
+1. Find the decision id from `mama_search` or `mama_load_checkpoint`
+2. Call `mama_update`
+3. Mark the result as `success`, `failed`, or `partial`
 
 ## Runtime Smoke Test
 
